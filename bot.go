@@ -39,7 +39,6 @@ func main() {
 	token := configuration.SlackToken
 	startupchannel := configuration.SlackStartChannel
 	startupmessage := configuration.SlackStartMessage
-	privusers := configuration.PrivilegedUsers
 
 	if flyurl == "" {
 		log.Fatalln("concourse_url not set")
@@ -58,9 +57,6 @@ func main() {
 	}
 	if startupmessage == "" {
 		log.Fatalln("slack_start_message not set")
-	}
-	if len(privusers) == 0 {
-		log.Fatalln("privileged_users not set")
 	}
 	api := slack.New(token)
 	if configuration.Debug {
@@ -82,7 +78,7 @@ func main() {
 			info := rtm.GetInfo()
 			prefix := fmt.Sprintf("<@%s> ", info.User.ID)
 			if ev.User != info.User.ID && strings.HasPrefix(ev.Text, prefix) {
-				go respond(rtm, ev, prefix, api, flyurl, conuser, conpass, privusers, configuration)
+				go respond(rtm, ev, prefix, api, configuration)
 			}
 			/* eggs */
 			obiwan := strings.ToLower(ev.Text)
@@ -124,7 +120,7 @@ func redirectPolicyFunc(r *http.Request, rr []*http.Request) error {
 }
 
 /* function to respond to message event in slack */
-func respond(rtm *slack.RTM, msg *slack.MessageEvent, prefix string, api *slack.Client, flyurl string, conuser string, conpass string, privusers []string, configuration Configuration) {
+func respond(rtm *slack.RTM, msg *slack.MessageEvent, prefix string, api *slack.Client, configuration Configuration) {
 	var response string
 	text := msg.Text
 	text = strings.TrimPrefix(text, prefix)
@@ -136,21 +132,10 @@ func respond(rtm *slack.RTM, msg *slack.MessageEvent, prefix string, api *slack.
 		fmt.Printf("%s\n", err)
 	}
 	rand.Seed(time.Now().Unix())
-	privilegedusers := privusers
+
 	// Respond with a random quote to unknown commands to @bot
 	quotes := configuration.Quotes
 	n := rand.Int() % len(quotes)
-	// Create a list of privileged users to respond to requests that need it with who to ask
-	askthem := ""
-	comma := ""
-	for i, v := range privilegedusers {
-		if i == 0 {
-			comma = ""
-		} else {
-			comma = ","
-		}
-		askthem = askthem + comma + "<@" + v + ">"
-	}
 
 	switch text {
 	case "good bot":
@@ -186,20 +171,21 @@ func respond(rtm *slack.RTM, msg *slack.MessageEvent, prefix string, api *slack.
 			api.PostMessage(channelID, response, params)
 		}
   */
-
+/*
 	case "do i have permission?":
 		if !contains(privilegedusers, string(user.Name)) {
-			response = string(user.Name) + ", you are not a keymaster? \n*maybe ask " + askthem + "*"
+			response = "<@" + string(user.Name) + ">, you are not a keymaster. \n*maybe ask " + askthem + " to add your username `"+string(user.Name)+"` to the list*"
 			rtm.SendMessage(rtm.NewOutgoingMessage(response, msg.Channel))
 		} else {
-			response = "You are a keymaster, " + string(user.Name)
+			response = "You are a keymaster, <@" + string(user.Name) + ">"
 			rtm.SendMessage(rtm.NewOutgoingMessage(response, msg.Channel))
-		}
+		}*/
 
 	case "help":
 		generatedHelp := ""
+  	slackbotname := configuration.SlackBotName
 		for i := range configuration.Commands {
-			commandStr := "@concoursebot " + string(configuration.Commands[i].Command)
+			commandStr := "@"+slackbotname+" " + string(configuration.Commands[i].Command)
 			numSpaces := 80 - len(commandStr)
 			spaces := ""
 			for i := 0; i < numSpaces; i++ {
@@ -207,13 +193,6 @@ func respond(rtm *slack.RTM, msg *slack.MessageEvent, prefix string, api *slack.
 			}
 			generatedHelp += string(commandStr) + string(spaces) + ": " + configuration.Commands[i].Help + "\n"
 		}
-		commandStr := "@concoursebot do i have permission?"
-		numSpaces := 80 - len(commandStr)
-		spaces := ""
-		for i := 0; i < numSpaces; i++ {
-			spaces += " "
-		}
-		generatedHelp += string(commandStr) + string(spaces) + ": check if you have permission to do higher level tasks\n"
 		response = ">>>Command list:\n" +
 			"```\n" +
 			generatedHelp +
@@ -229,14 +208,24 @@ func respond(rtm *slack.RTM, msg *slack.MessageEvent, prefix string, api *slack.
 				case "concourse":
 					randomQuote = false
 					if configuration.Commands[i].Options.Privileged == true {
-						if !contains(privilegedusers, string(user.Name)) {
+						if !contains(configuration.Commands[i].PrivilegedUsers, string(user.Name)) {
+              askthem := ""
+              comma := ""
+              for i, v := range configuration.Commands[i].PrivilegedUsers {
+                if i == 0 {
+                  comma = ""
+                } else {
+                  comma = ","
+                }
+                askthem = askthem + comma + "<@" + v + ">"
+              }
 							response = "I can't let you do that, Dave. \n*maybe ask " + askthem + "*"
 							rtm.SendMessage(rtm.NewOutgoingMessage(response, msg.Channel))
 						} else {
-							doConcourseTask(rtm, msg, flyurl, conuser, conpass, configuration.Commands[i].Options.Team, configuration.Commands[i].Options.Pipeline, configuration.Commands[i].Options.Job, configuration.Commands[i].AcceptResponse, configuration.Commands[i].Options.Skipoutput)
+							doConcourseTask(rtm, msg, configuration, configuration.Commands[i].Options.Team, configuration.Commands[i].Options.Pipeline, configuration.Commands[i].Options.Job, configuration.Commands[i].AcceptResponse, configuration.Commands[i].Options.Skipoutput)
 						}
 					} else {
-						doConcourseTask(rtm, msg, flyurl, conuser, conpass, configuration.Commands[i].Options.Team, configuration.Commands[i].Options.Pipeline, configuration.Commands[i].Options.Job, configuration.Commands[i].AcceptResponse, configuration.Commands[i].Options.Skipoutput)
+						doConcourseTask(rtm, msg, configuration, configuration.Commands[i].Options.Team, configuration.Commands[i].Options.Pipeline, configuration.Commands[i].Options.Job, configuration.Commands[i].AcceptResponse, configuration.Commands[i].Options.Skipoutput)
 					}
 				}
 			}

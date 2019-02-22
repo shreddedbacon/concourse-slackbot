@@ -21,12 +21,12 @@ type Data struct {
 
 type Configuration struct {
 	SlackToken        string   `json:"slack_token"`
+	SlackBotName      string   `json:"slack_bot_name"`
 	SlackStartChannel string   `json:"slack_start_channel"`
 	SlackStartMessage string   `json:"slack_start_message"`
 	ConcourseURL      string   `json:"concourse_url"`
 	ConcourseUsername string   `json:"concourse_username"`
 	ConcoursePassword string   `json:"concourse_password"`
-	PrivilegedUsers   []string `json:"privileged_users"`
 	Debug             bool     `json:"debug"`
 	Quotes            []string `json:"quotes"`
 	Commands          []struct {
@@ -41,5 +41,6 @@ type Configuration struct {
 			Skipoutput bool   `json:"skipoutput,omitempty"`
 			Privileged bool   `json:"privileged,omitempty"`
 		} `json:"options,omitempty"`
+  	PrivilegedUsers   []string `json:"privileged_users"`
 	} `json:"commands"`
 }

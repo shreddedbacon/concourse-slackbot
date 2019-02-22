@@ -1,13 +1,11 @@
 {
    "slack_token":"xoxb-xxxxxxxxxxxx-xxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxx",
+   "slack_bot_name":"concoursebot",
    "slack_start_channel":"",
    "slack_start_message":"ConcourseBot is alive!",
    "concourse_url":"",
    "concourse_username":"",
    "concourse_password":"",
-   "privileged_users":[
-      "user.name"
-   ],
    "debug":false,
    "commands":[
       {
@@ -21,7 +19,10 @@
             "job":"job-a",
             "skipoutput":false,
             "privileged":true
-         }
+         },
+         "privileged_users":[
+            "user.name"
+         ]
       },
       {
          "command":"run pipeline-a job-b",

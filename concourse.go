@@ -18,9 +18,9 @@ import (
 	"github.com/nlopes/slack"
 )
 
-func doConcourseTask(rtm *slack.RTM, msg *slack.MessageEvent, flyurl string, conuser string, conpass string, team string, pipeline string, job string, response string, skipoutput bool) {
+func doConcourseTask(rtm *slack.RTM, msg *slack.MessageEvent, configuration Configuration, team string, pipeline string, job string, response string, skipoutput bool) {
 	rtm.SendMessage(rtm.NewOutgoingMessage(response, msg.Channel))
-	output, err := concourseRunJob(team, pipeline, job, flyurl, conuser, conpass, skipoutput)
+	output, err := concourseRunJob(team, pipeline, job, configuration.ConcourseURL, configuration.ConcourseUsername, configuration.ConcoursePassword, skipoutput)
 	if err != nil {
 		response = "```\n" +
 			string(err.Error()) +

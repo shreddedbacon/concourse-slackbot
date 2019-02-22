@@ -1,14 +1,20 @@
-FROM golang
-
-WORKDIR /go/src/concoursebot
-
-COPY *.go /go/src/concoursebot/
-
+FROM golang AS builder
+RUN go version
+COPY *.go /go/src/github.com/shreddedbacon/concourse-slackbot/
+WORKDIR /go/src/github.com/shreddedbacon/concourse-slackbot/
 RUN go get github.com/nlopes/slack
-RUN cd /go/src/github.com/nlopes/slack && git checkout v0.3.0 && cd /go/src/concoursebot
-RUN go get -v .
-RUN go build -o concoursebot bot.go concourse.go structs.go
+#v0.3.0 required, newer version has some issues
+WORKDIR /go/src/github.com/nlopes/slack
+RUN git checkout v0.3.0
+WORKDIR /go/src/github.com/shreddedbacon/concourse-slackbot/
+RUN set -x && \
+    go get -v .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o concoursebot .
 
-ENTRYPOINT cp /go/src/concoursebot/concoursebot /project/builds/concoursebot
-
-#CMD ["./concoursebot"]
+# actual container
+FROM alpine:3.7
+RUN apk --no-cache add ca-certificates openssl
+WORKDIR /app/
+# bring the actual executable from the builder
+COPY --from=builder /go/src/github.com/shreddedbacon/concourse-slackbot/concoursebot .
+ENTRYPOINT ["./concoursebot"]

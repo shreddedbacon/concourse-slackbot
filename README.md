@@ -4,6 +4,10 @@ This is a simple slack bot that can start jobs in Concourse.
 ## Run me
 Create `config.json` using `example-config.json` as a starter and modify to suit your slack and concourse setup.
 ```
+# Build docker image with binary loaded and run it
+make build-run
+
+# Compile and output to builds/concoursebot and run builds/concoursebot
 make build && make run
 ```
 

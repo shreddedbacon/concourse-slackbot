@@ -4,7 +4,7 @@ set -e -u -x
 
 echo ">> Install git"
 apk add --no-cache git
-pwd
+MAINDIR=`pwd`
 VERSION=$(cat ${VERSION_FROM})
 # set up directory stuff for golang
 echo ">> Setup Directories"
@@ -17,7 +17,7 @@ git checkout v0.3.0
 cd  /go/src/github.com/shreddedbacon/concourse-slackbot
 echo ">> Get"
 go get -v .
-cd -
+cd $MAINDIR
 echo ">> Build"
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o built-release/concoursebot github.com/shreddedbacon/concourse-slackbot
 

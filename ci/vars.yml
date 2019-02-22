@@ -1,0 +1,14 @@
+initial_version: 0.0.1-rc1
+
+github:
+  private_key: ((concoursebot_ssh.private_key))
+  uri: git@github.com:shreddedbacon/concourse-slackbot.git
+  branch: master
+  user: shreddedbacon
+  repository: concourse-slackbot
+  access_token: ((github_api_token))
+
+aws:
+  access_key: ((concoursebot_minio.username))
+  secret_key: ((concoursebot_minio.password))
+  endpoint: ((concoursebot_minio_endpoint))

@@ -1,0 +1,177 @@
+---
+
+groups:
+  - name: 'concoursebot-builder'
+    jobs:
+      - build-release
+      - bump-rc
+      - promote-release
+      - bump-major
+      - bump-minor
+
+jobs:
+  - name: build-release
+    public: true
+    serial: true
+    plan:
+    - do:
+      - aggregate:
+        - get: concoursebot-release
+          trigger: true
+        - get: version
+      - task: build-release
+        config:
+          platform: linux
+          image_resource:
+            type: docker-image
+            source:
+              repository: golang
+              tag: alpine
+          inputs:
+            - name: concoursebot-release
+            - name: version
+          outputs:
+            - name: built-release
+          run:
+            path: ./concoursebot-release/ci/scripts/build.sh
+            args: []
+          params:
+            VERSION_FROM: version/number
+      - name: upload-binary
+        put: concoursebot-bucket
+        params:
+          file:  "built-release/concoursebot-linux-*.tar.gz"
+  - name: bump-rc
+    public: true
+    plan:
+    - do:
+      - aggregate:
+          - { get: concoursebot-release,     trigger: true,  passed: [build-release] }
+          - { get: version, trigger: true, params: {pre: rc} }
+          - { get: concoursebot-bucket, trigger: true }
+      - put: version
+        params: {file: version/number}
+
+  - name: bump-minor
+    public: true
+    plan:
+    - do:
+      - { get: version, trigger: false, params: {bump: minor} }
+      - { put: version,                 params: {file: version/number} }
+
+  - name: bump-major
+    public: true
+    plan:
+    - do:
+      - { get: version, trigger: false, params: {bump: major} }
+      - { put: version,                 params: {file: version/number} }
+
+  - name: promote-release
+    public: true
+    serial: true
+    plan:
+    - do:
+      - name: inputs
+        aggregate:
+          - { get: version, passed: [bump-rc], params: {bump: final} }
+          - { get: concoursebot-release,     passed: [bump-rc] }
+          - { get: concoursebot-bucket, passed: [bump-rc] }
+      - name: release
+        task: release
+        config:
+          platform: linux
+          image_resource:
+            type: docker-image
+            source: {repository: alpine }
+          inputs:
+            - name: version
+            - name: concoursebot-release
+            - name: concoursebot-bucket
+          outputs:
+            - name: gh
+            - name: pushme
+          run:
+            path: sh
+            args:
+              - -c
+              - |
+                echo ">> Install git"
+                apk add --no-cache git
+                sh concoursebot-release/ci/scripts/release.sh
+          params:
+            VERSION_FROM: version/number
+            GITHUB_OWNER: ((github.user))
+            GITHUB_REPO:  ((github.repository))
+            BRANCH:       ((github.branch))
+      - name: release
+        task: release
+        config:
+          platform: linux
+          image_resource:
+            type: docker-image
+            source: {repository: alpine}
+          inputs:
+            - name: gh
+            - name: pushme
+          run:
+            path: sh
+            args:
+              - -c
+              - |
+                ls gh/**/*
+                ls pushme/**/*
+      - name: upload-git
+        put: concoursebot-release
+        params:
+          rebase: true
+          repository: pushme/concoursebot-release
+      - name: github-release
+        put: github-release
+        params:
+          name:   gh/name
+          tag:    gh/tag
+          body:   gh/notes.md
+          globs: [gh/artifacts/*]
+      - name: version-bump
+        put: version
+        params:
+          bump: patch
+
+resource_types:
+
+resources:
+  - name: concoursebot-release
+    type: git
+    check_every: 15m
+    source:
+      uri:         ((github.uri))
+      branch:      ((github.branch))
+      private_key: ((github.private_key))
+
+  - name: github-release
+    type: github-release
+    check_every: 15m
+    source:
+      user:         ((github.user))
+      repository:   ((github.repository))
+      access_token: ((github.access_token))
+
+  - name: version
+    type: semver
+    source:
+      driver:            s3
+      bucket:            concoursebot
+      key:               version
+      initial_version:   ((initial_version))
+      access_key_id:     ((aws.access_key))
+      secret_access_key: ((aws.secret_key))
+      endpoint:          ((aws.endpoint))
+
+  - name: concoursebot-bucket
+    type: s3
+    source:
+      bucket:            concoursebot
+      access_key_id:     ((aws.access_key))
+      secret_access_key: ((aws.secret_key))
+      regexp:            "concoursebot-linux-(.*).tar.gz"
+      endpoint:          ((aws.endpoint))

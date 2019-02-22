@@ -1,0 +1,62 @@
+{
+   "slack_token":"xoxb-xxxxxxxxxxxx-xxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxx",
+   "slack_start_channel":"",
+   "slack_start_message":"ConcourseBot is alive!",
+   "concourse_url":"",
+   "concourse_username":"",
+   "concourse_password":"",
+   "privileged_users":[
+      "user.name"
+   ],
+   "debug":false,
+   "commands":[
+      {
+         "command":"run pipeline-a job-a",
+         "type":"concourse",
+         "accept_response":"Got it, I'll get Concourse to start that for you now, it can take some time to do, but I'll let you know when it is done.",
+         "help":"Run Job-B in Pipeline-A in Concourse; user must be in privileged users list for this bot to run",
+         "options":{
+            "team":"main",
+            "pipeline":"pipeline-a",
+            "job":"job-a",
+            "skipoutput":false,
+            "privileged":true
+         }
+      },
+      {
+         "command":"run pipeline-a job-b",
+         "type":"concourse",
+         "accept_response":"Got it, I'll get Concourse to start that for you now, it can take some time to do, but I'll let you know when it is done.",
+         "help":"Run Job-B in Pipeline-A in Concourse",
+         "options":{
+            "team":"main",
+            "pipeline":"pipeline-a",
+            "job":"job-b",
+            "skipoutput":true,
+            "privileged":false
+         }
+      }
+   ],
+   "quotes":[
+      "Anything else, mom? You want me to mow the lawn? Forgot, New York, No grass.",
+      "Mess with the best, die like the rest.",
+      "Hack the planet! Hack the planet!",
+      "We have just gotten a wake-up call from the Nintendo Generation.",
+      "Our recent unknown intruder penetrated using the superuser account, giving him access to our whole system.",
+      "Type 'cookie', you idiot. I'll head them off at the pass.",
+      "The trouble with programmers is that you can never tell what a programmer is doing until it’s too late.",
+      "Computers are useless. They can only give you answers.",
+      "Any sufficiently advanced technology is indistinguishable from magic.",
+      "I changed your password to 'incorrect.' That way when you forget it, you will always be reminded that 'Your password is incorrect.'",
+      "I have been told that the best crackers in the world can do this under 60 minutes but unfortunately I need someone who can do this under 60 seconds.",
+      "I've just gotta modify the code!",
+      "It's a UNIX system! I know this.",
+      "I'm tracking your IP address, I will slow you down",
+      "You are good, but I am better!",
+      "We've only got 2 of the blinky boxes left to go!",
+      "I could launch a cyber nuke, but it will completly fry your system",
+      "A strange game.The only winning move is not to play. How about a nice game of chess?",
+      "Later. Let's play Global Thermonuclear War.",
+      "I can hack you back in time to Nazi Germany, like a time machine!"
+   ]
+}

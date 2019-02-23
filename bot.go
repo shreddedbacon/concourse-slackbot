@@ -21,8 +21,8 @@ import (
 func main() {
 	// Load configuration
 	configurationFile := flag.String("config-file", "config.json", "Path to configuration file (default config.json)")
-	configFile := *configurationFile
 	flag.Parse()
+	configFile := *configurationFile
 	configuration := Configuration{}
 	jsonFile, err := os.Open(configFile)
 	if err != nil {

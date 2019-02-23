@@ -107,7 +107,7 @@ func contains(s []string, e string) bool {
 	return false
 }
 
-func check200(httpcode int) bool {
+func checkHttp200(httpcode int) bool {
 	if httpcode == 200 {
 		return true
 	} else {
@@ -142,56 +142,46 @@ func respond(rtm *slack.RTM, msg *slack.MessageEvent, prefix string, api *slack.
 		response = "I'm trying"
 		rtm.SendMessage(rtm.NewOutgoingMessage(response, msg.Channel))
 
-	/* example pass response from concourse build output to user that matches regex */
+	/* example pass response from concourse build output to user DM that matches regex */
 	/*
-	case "respond user":
-		response = "Got it, I'll send you a preprod login soon, make sure you connect to the VPN first :)"
-		rtm.SendMessage(rtm.NewOutgoingMessage(response, msg.Channel))
-		output, err := concourseRunJob(team, pipeline, job, flyurl, conuser, conpass, false)
-		if err != nil {
-			response = "```\n" +
-				string(err.Error()) +
-				"```"
+		case "respond user":
+			response = "Got it, I'll send you a preprod login soon, make sure you connect to the VPN first :)"
 			rtm.SendMessage(rtm.NewOutgoingMessage(response, msg.Channel))
-		} else {
-	     // regex to check output for
-			regex := regexp.MustCompile(`(http).+?(login)`)
-			matches := regex.FindAllString(output, -1)
-			response := "Here you go!\n"
-			_, _, channelID, err := api.OpenIMChannel(user.ID)
+			output, err := concourseRunJob(team, pipeline, job, flyurl, conuser, conpass, false)
 			if err != nil {
-				fmt.Printf("%s\n", err)
+				response = "```\n" +
+					string(err.Error()) +
+					"```"
+				rtm.SendMessage(rtm.NewOutgoingMessage(response, msg.Channel))
+			} else {
+		     // regex to check output for
+				regex := regexp.MustCompile(`(http).+?(login)`)
+				matches := regex.FindAllString(output, -1)
+				response := "Here you go!\n"
+				_, _, channelID, err := api.OpenIMChannel(user.ID)
+				if err != nil {
+					fmt.Printf("%s\n", err)
+				}
+				params := slack.PostMessageParameters{}
+				attachment := slack.Attachment{
+					Pretext:    "`" + strings.Join(matches2, "") + "`",
+					MarkdownIn: []string{"pretext"},
+				}
+				params.Attachments = []slack.Attachment{attachment}
+				api.PostMessage(channelID, response, params)
 			}
-			params := slack.PostMessageParameters{}
-			attachment := slack.Attachment{
-				Pretext:    "`" + strings.Join(matches2, "") + "`",
-				MarkdownIn: []string{"pretext"},
-			}
-			params.Attachments = []slack.Attachment{attachment}
-			api.PostMessage(channelID, response, params)
-		}
-  */
-/*
-	case "do i have permission?":
-		if !contains(privilegedusers, string(user.Name)) {
-			response = "<@" + string(user.Name) + ">, you are not a keymaster. \n*maybe ask " + askthem + " to add your username `"+string(user.Name)+"` to the list*"
-			rtm.SendMessage(rtm.NewOutgoingMessage(response, msg.Channel))
-		} else {
-			response = "You are a keymaster, <@" + string(user.Name) + ">"
-			rtm.SendMessage(rtm.NewOutgoingMessage(response, msg.Channel))
-		}*/
-
+	*/
 	case "help":
 		generatedHelp := ""
-  	slackbotname := configuration.SlackBotName
-		for i := range configuration.Commands {
-			commandStr := "@"+slackbotname+" " + string(configuration.Commands[i].Command)
+		slackBotName := configuration.SlackBotName
+		for command := range configuration.Commands {
+			commandStr := "@" + slackBotName + " " + string(configuration.Commands[command].Command)
 			numSpaces := 80 - len(commandStr)
 			spaces := ""
-			for i := 0; i < numSpaces; i++ {
+			for space := 0; space < numSpaces; space++ {
 				spaces += " "
 			}
-			generatedHelp += string(commandStr) + string(spaces) + ": " + configuration.Commands[i].Help + "\n"
+			generatedHelp += string(commandStr) + string(spaces) + ": " + configuration.Commands[command].Help + "\n"
 		}
 		response = ">>>Command list:\n" +
 			"```\n" +
@@ -202,30 +192,30 @@ func respond(rtm *slack.RTM, msg *slack.MessageEvent, prefix string, api *slack.
 	default:
 		var randomQuote bool
 		randomQuote = true
-		for i := range configuration.Commands {
-			if configuration.Commands[i].Command == text {
-				switch configuration.Commands[i].Type {
+		for command := range configuration.Commands {
+			if configuration.Commands[command].Command == text {
+				switch configuration.Commands[command].Type {
 				case "concourse":
 					randomQuote = false
-					if configuration.Commands[i].Options.Privileged == true {
-						if !contains(configuration.Commands[i].PrivilegedUsers, string(user.Name)) {
-              askthem := ""
-              comma := ""
-              for i, v := range configuration.Commands[i].PrivilegedUsers {
-                if i == 0 {
-                  comma = ""
-                } else {
-                  comma = ","
-                }
-                askthem = askthem + comma + "<@" + v + ">"
-              }
-							response = "I can't let you do that, Dave. \n*maybe ask " + askthem + "*"
+					if configuration.Commands[command].Options.Privileged == true {
+						if !contains(configuration.Commands[command].PrivilegedUsers, string(user.Name)) {
+							askThem := ""
+							comma := ""
+							for key, val := range configuration.Commands[command].PrivilegedUsers {
+								if key == 0 {
+									comma = ""
+								} else {
+									comma = ","
+								}
+								askThem = askThem + comma + "<@" + v + ">"
+							}
+							response = "I can't let you do that, Dave. \n*maybe ask " + askThem + "*"
 							rtm.SendMessage(rtm.NewOutgoingMessage(response, msg.Channel))
 						} else {
-							doConcourseTask(rtm, msg, configuration, configuration.Commands[i].Options.Team, configuration.Commands[i].Options.Pipeline, configuration.Commands[i].Options.Job, configuration.Commands[i].AcceptResponse, configuration.Commands[i].Options.Skipoutput)
+							doConcourseTask(rtm, msg, configuration, command)
 						}
 					} else {
-						doConcourseTask(rtm, msg, configuration, configuration.Commands[i].Options.Team, configuration.Commands[i].Options.Pipeline, configuration.Commands[i].Options.Job, configuration.Commands[i].AcceptResponse, configuration.Commands[i].Options.Skipoutput)
+						doConcourseTask(rtm, msg, configuration, command)
 					}
 				}
 			}

@@ -41,6 +41,6 @@ type Configuration struct {
 			Skipoutput bool   `json:"skipoutput,omitempty"`
 			Privileged bool   `json:"privileged,omitempty"`
 		} `json:"options,omitempty"`
-  	PrivilegedUsers   []string `json:"privileged_users"`
+		PrivilegedUsers []string `json:"privileged_users"`
 	} `json:"commands"`
 }

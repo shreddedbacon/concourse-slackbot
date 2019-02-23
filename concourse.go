@@ -18,9 +18,17 @@ import (
 	"github.com/nlopes/slack"
 )
 
-func doConcourseTask(rtm *slack.RTM, msg *slack.MessageEvent, configuration Configuration, team string, pipeline string, job string, response string, skipoutput bool) {
+func doConcourseTask(rtm *slack.RTM, msg *slack.MessageEvent, configuration Configuration, command int) {
+	response := configuration.Commands[command].AcceptResponse
 	rtm.SendMessage(rtm.NewOutgoingMessage(response, msg.Channel))
-	output, err := concourseRunJob(team, pipeline, job, configuration.ConcourseURL, configuration.ConcourseUsername, configuration.ConcoursePassword, skipoutput)
+	concourseTeam := configuration.Commands[command].Options.Team
+	concoursePipeline := configuration.Commands[command].Options.Pipeline
+	concourseJob := configuration.Commands[command].Options.Job
+	concourseSkipoutput := configuration.Commands[command].Options.Skipoutput
+	concourseUrl := configuration.ConcourseURL
+	concourseUsername := configuration.ConcourseUsername
+	concoursePassword := configuration.ConcoursePassword
+	output, err := concourseRunJob(concourseTeam, concoursePipeline, concourseJob, concourseUrl, concourseUsername, concoursePassword, concourseSkipoutput)
 	if err != nil {
 		response = "```\n" +
 			string(err.Error()) +
@@ -35,32 +43,32 @@ func doConcourseTask(rtm *slack.RTM, msg *slack.MessageEvent, configuration Conf
 }
 
 // Connect to concourse, run the job, wait for it to finish then return the output
-func concourseRunJob(team string, pipeline string, job string, flyurl string, conuser string, conpass string, skipoutput bool) (string, error) {
-	authtoken, autherr := concourseAuth(flyurl, conuser, conpass)
-	if autherr != nil {
-		return "", autherr
+func concourseRunJob(concourseTeam string, concoursePipeline string, concourseJob string, concourseUrl string, concourseUsername string, concoursePassword string, concourseSkipoutput bool) (string, error) {
+	authToken, authErr := concourseAuth(concourseUrl, concourseUsername, concoursePassword)
+	if authErr != nil {
+		return "", authErr
 	} else {
-		precheckerr := concoursePreCheck(team, pipeline, job, flyurl, authtoken)
-		if precheckerr != nil {
-			return "", precheckerr
+		preCheckErr := concoursePreCheck(concourseTeam, concoursePipeline, concourseJob, concourseUrl, authToken)
+		if preCheckErr != nil {
+			return "", preCheckErr
 		} else {
-			triggererr := concourseTrigger(team, pipeline, job, flyurl, authtoken)
-			if triggererr != nil {
-				return "", triggererr
+			triggerErr := concourseTrigger(concourseTeam, concoursePipeline, concourseJob, concourseUrl, authToken)
+			if triggerErr != nil {
+				return "", triggerErr
 			} else {
-				buildid, statuserr := concourseStatusCheck(team, pipeline, job, flyurl, authtoken)
-				if statuserr != nil {
-					return "", statuserr
+				buildId, statusErr := concourseStatusCheck(concourseTeam, concoursePipeline, concourseJob, concourseUrl, authToken)
+				if statusErr != nil {
+					return "", statusErr
 				} else {
-					if skipoutput == false {
-						buildoutput, builderr := concourseGetEventLog(pipeline, job, flyurl, authtoken, buildid)
-						if builderr != nil {
-							return "", builderr
+					if concourseSkipoutput == false {
+						buildOutput, buildErr := concourseGetEventLog(concoursePipeline, concourseJob, concourseUrl, authToken, buildId)
+						if buildErr != nil {
+							return "", buildErr
 						} else {
-							return buildoutput, nil
+							return buildOutput, nil
 						}
 					} else {
-						return "Job output for `" + pipeline + "/" + job + "` has been skipped.", nil
+						return "Job output for `" + concoursePipeline + "/" + concourseJob + "` has been skipped.", nil
 					}
 				}
 			}
@@ -68,8 +76,7 @@ func concourseRunJob(team string, pipeline string, job string, flyurl string, co
 	}
 }
 
-
-func concourseAuth(flyurl string, conuser string, conpass string) (string, error) {
+func concourseAuth(concourseUrl string, concourseUsername string, concoursePassword string) (string, error) {
 	cookieJar, _ := cookiejar.New(nil)
 	var netClient = &http.Client{
 		Timeout:       time.Second * 10,
@@ -80,7 +87,7 @@ func concourseAuth(flyurl string, conuser string, conpass string) (string, error
 		Timeout: time.Second * 10,
 		Jar:     cookieJar,
 	}
-	req1, _ := http.NewRequest("POST", flyurl+"/sky/login", bytes.NewBuffer([]byte("")))
+	req1, _ := http.NewRequest("POST", concourseUrl+"/sky/login", bytes.NewBuffer([]byte("")))
 	resp1, _ := netClient.Do(req1)
 	resploc, _ := resp1.Location()
 
@@ -91,53 +98,53 @@ func concourseAuth(flyurl string, conuser string, conpass string) (string, error
 	matches2 := regex2.FindAllString(string(dump1), -1)
 
 	data := url.Values{}
-	data.Set("login", conuser)
-	data.Add("password", conpass)
-	req, _ := http.NewRequest("POST", flyurl+matches2[0], strings.NewReader(data.Encode()))
+	data.Set("login", concourseUsername)
+	data.Add("password", concoursePassword)
+	req, _ := http.NewRequest("POST", concourseUrl+matches2[0], strings.NewReader(data.Encode()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
 	resp, _ := netClient2.Do(req)
 	c := cookieJar.Cookies(req.URL)
-	if check200(resp.StatusCode) {
+	if checkHttp200(resp.StatusCode) {
 		return c[0].Value, nil
 	} else {
 		return "", errors.New("Failed to connect to CI\n\nProbably can't access the Concourse URL from where your bot is running")
 	}
 }
 
-func concourseTrigger(team string, pipeline string, job string, flyurl string, authtoken string) error {
+func concourseTrigger(concourseTeam string, concoursePipeline string, concourseJob string, concourseUrl string, authToken string) error {
 	var netClient = &http.Client{
 		Timeout: time.Second * 10,
 	}
-	req, _ := http.NewRequest("POST", flyurl+"/api/v1/teams/"+team+"/pipelines/"+pipeline+"/jobs/"+job+"/builds", bytes.NewBuffer([]byte("")))
-	req.Header.Add("Authorization", authtoken)
+	req, _ := http.NewRequest("POST", concourseUrl+"/api/v1/teams/"+concourseTeam+"/pipelines/"+concoursePipeline+"/jobs/"+concourseJob+"/builds", bytes.NewBuffer([]byte("")))
+	req.Header.Add("Authorization", authToken)
 	resp, _ := netClient.Do(req)
-	if check200(resp.StatusCode) {
+	if checkHttp200(resp.StatusCode) {
 		return nil
 	} else {
 		return errors.New("Failed to connect to CI\n\nEither Team, Pipeline, or Job don't exist. You should check.")
 	}
 }
 
-func concoursePreCheck(team string, pipeline string, job string, flyurl string, authtoken string) error {
+func concoursePreCheck(concourseTeam string, concoursePipeline string, concourseJob string, concourseUrl string, authToken string) error {
 	var netClient = &http.Client{
 		Timeout: time.Second * 10,
 	}
-	statusresp := &ConcourseStatus{}
+	statusResp := &ConcourseStatus{}
 	// poll job for succeeded
-	req, _ := http.NewRequest("GET", flyurl+"/api/v1/teams/"+team+"/pipelines/"+pipeline+"/jobs/"+job+"/builds/latest", nil)
-	req.Header.Add("Authorization", authtoken)
+	req, _ := http.NewRequest("GET", concourseUrl+"/api/v1/teams/"+concourseTeam+"/pipelines/"+concoursePipeline+"/jobs/"+concourseJob+"/builds/latest", nil)
+	req.Header.Add("Authorization", authToken)
 	resp, _ := netClient.Do(req)
-	if check200(resp.StatusCode) {
+	if checkHttp200(resp.StatusCode) {
 		body, _ := ioutil.ReadAll(resp.Body)
-		if err := json.Unmarshal([]byte(body), statusresp); err != nil {
+		if err := json.Unmarshal([]byte(body), statusResp); err != nil {
 			return err
 		}
 		resp.Body.Close()
-		if statusresp.Status == "succeeded" || statusresp.Status == "failed" || statusresp.Status == "aborted" {
+		if statusResp.Status == "succeeded" || statusResp.Status == "failed" || statusResp.Status == "aborted" {
 			return nil
 		} else {
-			return errors.New("A job for `" + pipeline + "/" + job + "` is already running, try again soon")
+			return errors.New("A job for `" + concoursePipeline + "/" + concourseJob + "` is already running, try again soon")
 		}
 	} else {
 		body, _ := ioutil.ReadAll(resp.Body)
@@ -150,31 +157,31 @@ func concoursePreCheck(team string, pipeline string, job string, flyurl string, 
 	return errors.New("Something went wrong")
 }
 
-func concourseStatusCheck(team string, pipeline string, job string, flyurl string, authtoken string) (string, error) {
+func concourseStatusCheck(concourseTeam string, concoursePipeline string, concourseJob string, concourseUrl string, authToken string) (string, error) {
 	var netClient = &http.Client{
 		Timeout: time.Second * 10,
 	}
-	statusresp := &ConcourseStatus{}
+	statusResp := &ConcourseStatus{}
 	// poll job for succeeded
 	for {
-		req, _ := http.NewRequest("GET", flyurl+"/api/v1/teams/"+team+"/pipelines/"+pipeline+"/jobs/"+job+"/builds/latest", nil)
-		req.Header.Add("Authorization", authtoken)
+		req, _ := http.NewRequest("GET", concourseUrl+"/api/v1/teams/"+concourseTeam+"/pipelines/"+concoursePipeline+"/jobs/"+concourseJob+"/builds/latest", nil)
+		req.Header.Add("Authorization", authToken)
 		resp, _ := netClient.Do(req)
-		if check200(resp.StatusCode) {
+		if checkHttp200(resp.StatusCode) {
 			body, _ := ioutil.ReadAll(resp.Body)
-			if err := json.Unmarshal([]byte(body), statusresp); err != nil {
+			if err := json.Unmarshal([]byte(body), statusResp); err != nil {
 				return "", err
 			}
 			resp.Body.Close()
-			if statusresp.Status == "succeeded" {
-				buildid := strconv.Itoa(statusresp.ID)
+			if statusResp.Status == "succeeded" {
+				buildid := strconv.Itoa(statusResp.ID)
 				return buildid, nil
 			}
-			if statusresp.Status == "failed" {
-				return "", errors.New("Job failed, see " + flyurl + "/teams/" + team + "/pipelines/" + pipeline + "/jobs/" + job + "/builds/latest")
+			if statusResp.Status == "failed" {
+				return "", errors.New("Job failed, see " + concourseUrl + "/teams/" + concourseTeam + "/pipelines/" + concoursePipeline + "/jobs/" + concourseJob + "/builds/latest")
 			}
-			if statusresp.Status == "aborted" {
-				return "", errors.New("Job aborted, see " + flyurl + "/teams/" + team + "/pipelines/" + pipeline + "/jobs/" + job + "/builds/latest")
+			if statusResp.Status == "aborted" {
+				return "", errors.New("Job aborted, see " + concourseUrl + "/teams/" + concourseTeam + "/pipelines/" + concoursePipeline + "/jobs/" + concourseJob + "/builds/latest")
 			}
 		} else {
 			return "", errors.New("Failed to establish connection to CI - Job was queued and may or may not be running still\n\nDo not run this again unless you are sure")
@@ -184,27 +191,27 @@ func concourseStatusCheck(team string, pipeline string, job string, flyurl strin
 	return "", errors.New("Something went wrong")
 }
 
-func concourseGetEventLog(pipeline string, job string, flyurl string, authtoken string, buildid string) (string, error) {
+func concourseGetEventLog(concoursePipeline string, concourseJob string, concourseUrl string, authToken string, buildid string) (string, error) {
 	var netClient = &http.Client{
 		Timeout: time.Second * 10,
 	}
-	req, _ := http.NewRequest("GET", flyurl+"/api/v1/builds/"+buildid+"/events", nil)
-	req.Header.Add("Authorization", authtoken)
+	req, _ := http.NewRequest("GET", concourseUrl+"/api/v1/builds/"+buildid+"/events", nil)
+	req.Header.Add("Authorization", authToken)
 	resp, _ := netClient.Do(req)
-	if check200(resp.StatusCode) {
+	if checkHttp200(resp.StatusCode) {
 		body, _ := ioutil.ReadAll(resp.Body)
 		resp.Body.Close()
 		regex := regexp.MustCompile(`\{\s*"data"\s*:\s*(.+?)\s*,\s*"event"\s*:\s*(.+?)\s*\}`)
 		matches := regex.FindAllString(string(body), -1)
 		output := ""
 		for _, v := range matches {
-			payloaddata := &ConcourseEvent{
+			payloadData := &ConcourseEvent{
 				Data: &Data{},
 			}
-			err := json.Unmarshal([]byte(v), payloaddata)
+			err := json.Unmarshal([]byte(v), payloadData)
 			if err != nil {
 			}
-			output = output + payloaddata.Data.Payload
+			output = output + payloadData.Data.Payload
 		}
 		return output, nil
 	} else {

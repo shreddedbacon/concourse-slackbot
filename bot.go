@@ -201,13 +201,13 @@ func respond(rtm *slack.RTM, msg *slack.MessageEvent, prefix string, api *slack.
 						if !contains(configuration.Commands[command].PrivilegedUsers, string(user.Name)) {
 							askThem := ""
 							comma := ""
-							for key, val := range configuration.Commands[command].PrivilegedUsers {
-								if key == 0 {
+							for userIndex, userVal := range configuration.Commands[command].PrivilegedUsers {
+								if userIndex == 0 {
 									comma = ""
 								} else {
 									comma = ","
 								}
-								askThem = askThem + comma + "<@" + v + ">"
+								askThem = askThem + comma + "<@" + userVal + ">"
 							}
 							response = "I can't let you do that, Dave. \n*maybe ask " + askThem + "*"
 							rtm.SendMessage(rtm.NewOutgoingMessage(response, msg.Channel))

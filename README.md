@@ -1,6 +1,9 @@
 # Concourse SlackBot
 This is a simple slack bot that can start jobs in Concourse.
 
+# Usage
+Build and run the bot. Once it announces it is running, you can `@botname help` to get a list of commands you can run.
+
 # Run me
 ## BOSH Release
 Use the [Concourse Slackbot BOSH Release](https://github.com/shreddedbacon/concourse-slackbot-boshrelease)

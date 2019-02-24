@@ -18,9 +18,9 @@ import (
 	"github.com/nlopes/slack"
 )
 
-func doConcourseTask(rtm *slack.RTM, msg *slack.MessageEvent, configuration Configuration, command int) {
+func doConcourseTask(rtm *slack.RTM, msgChannel string, configuration Configuration, command int) {
 	response := configuration.Commands[command].AcceptResponse
-	rtm.SendMessage(rtm.NewOutgoingMessage(response, msg.Channel))
+	rtm.SendMessage(rtm.NewOutgoingMessage(response, msgChannel))
 	concourseTeam := configuration.Commands[command].Options.Team
 	concoursePipeline := configuration.Commands[command].Options.Pipeline
 	concourseJob := configuration.Commands[command].Options.Job
@@ -33,12 +33,16 @@ func doConcourseTask(rtm *slack.RTM, msg *slack.MessageEvent, configuration Conf
 		response = "```\n" +
 			string(err.Error()) +
 			"```"
-		rtm.SendMessage(rtm.NewOutgoingMessage(response, msg.Channel))
+		rtm.SendMessage(rtm.NewOutgoingMessage(response, msgChannel))
 	} else {
+		// If the output is going to be large, only show the last 1000 characters
+		if len(output) > 1000 {
+			output = output[1000:]
+		}
 		response = "```\n" +
 			output +
 			"```"
-		rtm.SendMessage(rtm.NewOutgoingMessage(response, msg.Channel))
+		rtm.SendMessage(rtm.NewOutgoingMessage(response, msgChannel))
 	}
 }
 
@@ -191,11 +195,11 @@ func concourseStatusCheck(concourseTeam string, concoursePipeline string, concou
 	return "", errors.New("Something went wrong")
 }
 
-func concourseGetEventLog(concoursePipeline string, concourseJob string, concourseUrl string, authToken string, buildid string) (string, error) {
+func concourseGetEventLog(concoursePipeline string, concourseJob string, concourseUrl string, authToken string, buildId string) (string, error) {
 	var netClient = &http.Client{
 		Timeout: time.Second * 10,
 	}
-	req, _ := http.NewRequest("GET", concourseUrl+"/api/v1/builds/"+buildid+"/events", nil)
+	req, _ := http.NewRequest("GET", concourseUrl+"/api/v1/builds/"+buildId+"/events", nil)
 	req.Header.Add("Authorization", authToken)
 	resp, _ := netClient.Do(req)
 	if checkHttp200(resp.StatusCode) {

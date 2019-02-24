@@ -216,10 +216,10 @@ func respond(rtm *slack.RTM, msg *slack.MessageEvent, prefix string, api *slack.
 							response = "I can't let you do that, Dave. \n*maybe ask " + askThem + "*"
 							rtm.SendMessage(rtm.NewOutgoingMessage(response, msg.Channel))
 						} else {
-							doConcourseTask(rtm, msg, configuration, command)
+							doConcourseTask(rtm, msg.Channel, configuration, command)
 						}
 					} else {
-						doConcourseTask(rtm, msg, configuration, command)
+						doConcourseTask(rtm, msg.Channel, configuration, command)
 					}
 				}
 			}

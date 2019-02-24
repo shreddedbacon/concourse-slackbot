@@ -21,7 +21,7 @@
             "privileged":true
          },
          "privileged_users":[
-            "user.name"
+            "USLACKBOT"
          ]
       },
       {

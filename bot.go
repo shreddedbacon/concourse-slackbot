@@ -202,7 +202,7 @@ func respond(rtm *slack.RTM, msg *slack.MessageEvent, prefix string, api *slack.
 				case "concourse":
 					randomQuote = false
 					if configuration.Commands[command].Options.Privileged == true {
-						if !contains(configuration.Commands[command].PrivilegedUsers, string(user.Name)) {
+						if !contains(configuration.Commands[command].PrivilegedUsers, string(user.ID)) {
 							askThem := ""
 							comma := ""
 							for userIndex, userVal := range configuration.Commands[command].PrivilegedUsers {

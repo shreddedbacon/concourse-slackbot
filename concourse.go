@@ -35,9 +35,9 @@ func doConcourseTask(rtm *slack.RTM, msgChannel string, configuration Configurat
 			"```"
 		rtm.SendMessage(rtm.NewOutgoingMessage(response, msgChannel))
 	} else {
-		// If the output is going to be large, only show the last 1000 characters
-		if len(output) > 1000 {
-			output = output[1000:]
+		// If the output is going to be large, only show the last 2000 characters
+		if len(output) > 2000 {
+			output = output[len(output)-2000:]
 		}
 		response = "```\n" +
 			output +

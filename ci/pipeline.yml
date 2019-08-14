@@ -40,6 +40,10 @@ jobs:
         put: concoursebot-bucket
         params:
           file:  "built-release/concoursebot-linux-*.tar.gz"
+      - name: put-docker-hub
+        put: docker-hub
+        params:
+          build: concoursebot-release
   - name: bump-rc
     public: true
     plan:
@@ -135,6 +139,11 @@ jobs:
         put: version
         params:
           bump: patch
+      - name: put-docker-hub
+        put: docker-hub
+        params:
+          build: concoursebot-release
+          tag_file: version/number
 
 resource_types:
 
@@ -174,3 +183,11 @@ resources:
       secret_access_key: ((aws.secret_key))
       regexp:            "concoursebot-linux-(.*).tar.gz"
       endpoint:          ((aws.endpoint))
+
+  - name: docker-hub
+    type: docker-image
+    source:
+      repository: shreddedbacon/concoursebot
+      tag: latest
+      username: ((dockerhub.username))
+      password: ((dockerhub.password))

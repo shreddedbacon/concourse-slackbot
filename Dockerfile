@@ -2,10 +2,10 @@ FROM golang AS builder
 RUN go version
 COPY *.go /go/src/github.com/shreddedbacon/concourse-slackbot/
 WORKDIR /go/src/github.com/shreddedbacon/concourse-slackbot/
-RUN go get github.com/nlopes/slack
-#v0.3.0 required, newer version has some issues
-WORKDIR /go/src/github.com/nlopes/slack
-RUN git checkout v0.3.0
+# RUN go get github.com/nlopes/slack
+# #v0.3.0 required, newer version has some issues
+# WORKDIR /go/src/github.com/nlopes/slack
+# RUN git checkout v0.3.0
 WORKDIR /go/src/github.com/shreddedbacon/concourse-slackbot/
 RUN set -x && \
     go get -v .

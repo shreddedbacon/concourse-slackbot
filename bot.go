@@ -28,7 +28,7 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	fmt.Println("Successfully read config.json file")
+	fmt.Printf("Successfully read %v file\n", configFile)
 	// defer the closing of our jsonFile so that we can parse it later on
 	defer jsonFile.Close()
 	configJson, _ := ioutil.ReadAll(jsonFile)
@@ -62,10 +62,11 @@ func main() {
 	if startupmessage == "" {
 		log.Fatalln("slack_start_message not set")
 	}
-	api := slack.New(token)
-	if configuration.Debug {
-		api.SetDebug(true)
-	}
+  api := slack.New(token)
+  // Debugging doesn't appear to work anymore
+	// if configuration.Debug {
+  //   slack.OptionDebug(true)
+  // }
 
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 

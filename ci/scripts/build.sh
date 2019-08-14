@@ -1,5 +1,5 @@
 #!/bin/sh
-set -eu -o pipefail
+#set -eu -o pipefail
 
 header() {
 	echo "########################"

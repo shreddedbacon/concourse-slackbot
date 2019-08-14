@@ -17,6 +17,11 @@ make build-run
 # Compile and output to builds/concoursebot and run builds/concoursebot
 make build && make run
 ```
+### Docker Run
+Edit the config.json file to suit
+```
+docker run --name concoursebot --rm -v `pwd`/config.json:/app/config.json shreddedbacon/concoursebot:latest
+```
 
 # Set up Slack
 Create app [here](https://api.slack.com/apps)

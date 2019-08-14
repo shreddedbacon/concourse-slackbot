@@ -9,6 +9,7 @@ header() {
 
 MAINDIR=`pwd`
 VERSION=$(cat ${VERSION_FROM})
+GO111MODULE=on 
 # set up directory stuff for golang
 header "Setup"
 mkdir -p /go/src/github.com/shreddedbacon/

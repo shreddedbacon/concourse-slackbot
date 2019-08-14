@@ -1,5 +1,6 @@
 FROM golang AS builder
 RUN go version
+ENV GO111MODULE=on 
 COPY *.go /go/src/github.com/shreddedbacon/concourse-slackbot/
 WORKDIR /go/src/github.com/shreddedbacon/concourse-slackbot/
 # RUN go get github.com/nlopes/slack

@@ -25,7 +25,7 @@ cd  /go/src/github.com/shreddedbacon/concourse-slackbot
 go get -v .
 cd $MAINDIR
 header "Build concourse-slackbot"
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o built-release/concoursebot github.com/shreddedbacon/concourse-slackbot
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o built-release/concoursebot .
 
 header "Create artifact"
 cd built-release

@@ -25,7 +25,8 @@ jobs:
           image_resource:
             type: docker-image
             source:
-              repository: shreddedbacon/alpine-git
+              #repository: shreddedbacon/alpine-git
+              repository: golang
           inputs:
             - name: concoursebot-release
             - name: version

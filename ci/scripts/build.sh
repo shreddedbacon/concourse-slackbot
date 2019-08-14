@@ -22,7 +22,6 @@ header "Get deps"
 # git checkout v0.3.0 > /dev/null 2>&1
 cd  /go/src/github.com/shreddedbacon/concourse-slackbot
 go get -v .
-cd $MAINDIR
 header "Build concourse-slackbot"
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o built-release/concoursebot .
 

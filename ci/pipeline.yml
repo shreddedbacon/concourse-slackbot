@@ -51,7 +51,7 @@ jobs:
       - aggregate:
           - { get: concoursebot-release,     trigger: true,  passed: [build-release] }
           - { get: version,  params: {pre: rc} }
-          - { get: concoursebot-bucket, trigger: true }
+          - { get: concoursebot-bucket }
       - put: version
         params: {file: version/number}
 

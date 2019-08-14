@@ -25,4 +25,4 @@ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o $MAINDIR/built-release/conc
 cd -
 header "Create artifact"
 cd built-release
-tar czf concoursebot-linux-dev.tar.gz concoursebot
+tar czf concoursebot-linux-${VERSION}.tar.gz concoursebot

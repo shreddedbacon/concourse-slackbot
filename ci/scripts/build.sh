@@ -7,6 +7,8 @@ header() {
 	echo
 }
 
+apt-get update && apt-get install git
+
 MAINDIR=`pwd`
 VERSION=$(cat ${VERSION_FROM})
 export GO111MODULE=on
